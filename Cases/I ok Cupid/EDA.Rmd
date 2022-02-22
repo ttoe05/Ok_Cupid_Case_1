@@ -1,0 +1,58 @@
+---
+title: "OK Cupid Case 1"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+plot(cars)
+```
+
+# Load Libraries
+library(dplyr)
+library(stringr)
+
+#Set working directory
+setwd("C:/Users/student/Documents/Terrill/Harvard DS/Data_Mining_Business/Harvard_DataMining_Business_Student/Cases/I Ok Cupid"
+)
+# Load the address dataset
+df_address <- read.csv("addr.csv")
+# Load the lat long dataset
+df_latLong <- read.csv("LatLon.csv")
+# Load the profiles dataset
+df_profiles <- read.csv("profiles.csv")
+# Load the Census2010 dataset
+df_census <- read.csv("sharedCensus2010Vars.csv")
+```{r}
+
+```
+# Get the number of null values in each column of the profiles
+df_profiles %>% summarise(across(everything(), ~ sum(is.na(.))))
+# get the dimension of the df_profiles column
+dim(df_profiles)
+```{r}
+
+```
+# check the datatypes of each column in the profiles dataset
+str(df_profiles)
+```{r}
+
+```
+# Convert the listed columns to factor to capture the structure in the data
+fac_cols <- c("body_type", "drinks", "drugs", "education", "job", "location", "orientation", "pets", "sex", "smokes", "status")
+df_profiles[,fac_cols] <- lapply(df_profiles[,fac_cols], factor)
+# Get the summary of each column
+summary(df_profiles)
+```{r}
+
+```
+# Drop the essays column and last online and essay columns
+df_profiles = subset(df_profiles, select = -c(last_online, essay0))
+```{r}
+
+```
+# Get the number of unique values for each column
+table(df_profiles$body_type)
