@@ -25,7 +25,7 @@ for (indx in na_indxes_city){
 
 # Return the indexes where the State is null and populate the state column the same as above
 na_indxes_st <- which(is.na(df_address$state))
-
+#Adding to be pushed
 for (indx in na_indxes_st){
   loc_split <- strsplit(str_to_title(df_address$location[indx]), split=", ")
   df_address$state[indx] <- loc_split[[1]][2]
@@ -42,3 +42,12 @@ df_latlon <- read.csv("Latlon.csv")
 
 
 # Check if postal codes are similar in the data set for counties
+d <- wrapr::build_frame(
+  "x1", "x2", "x3" |
+    1 , 4 , "A" |
+    NA , 5 , "B" |
+    3 , 6 , NA |
+    3 , 6 , "B" )
+plan <- design_missingness_treatment(d)
+prepare(plan, d)
+prepare(plan, data.frame(x1=NA, x2=NA, x3="E"))

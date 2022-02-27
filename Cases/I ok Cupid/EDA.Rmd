@@ -12,12 +12,22 @@ plot(cars)
 ```
 
 # Load Libraries
+#install.packages("gridExtra")
+#install.packages("caret")
+library(caret)
+library(vtreat)
+library(gridExtra)
 library(dplyr)
+library(tidyr)
 library(stringr)
+library(ggplot2)
 
 #Set working directory
-setwd("C:/Users/student/Documents/Terrill/Harvard DS/Data_Mining_Business/Harvard_DataMining_Business_Student/Cases/I Ok Cupid"
-)
+# mac setting of working directory
+path <- getwd()
+setwd(path)
+# Windows setting of working directory
+#setwd("C:/Users/student/Documents/Terrill/Harvard DS/Data_Mining_Business/Harvard_DataMining_Business_Student/Cases/I Ok Cupid")
 # Load the address dataset
 df_address <- read.csv("addr.csv")
 # Load the lat long dataset
@@ -50,9 +60,111 @@ summary(df_profiles)
 
 ```
 # Drop the essays column and last online and essay columns
-df_profiles = subset(df_profiles, select = -c(last_online, essay0))
+df_profiles <- subset(df_profiles, select = -c(last_online, essay0))
 ```{r}
 
 ```
-# Get the number of unique values for each column
-table(df_profiles$body_type)
+
+# Plot the graphs for bod_type, drinks, drugs, education, job, orientation, pets, smokes, and status
+body <- ggplot(as.data.frame(sort(table(df_profiles$body_type), decreasing=TRUE)), aes(Var1, Freq)) + 
+          geom_bar(stat="identity")+ geom_text(aes(label=Freq), vjust=-0.3, size=2) + theme_minimal() + + coord_flip()
+  
+
+drink <- ggplot(as.data.frame(sort(table(df_profiles$drinks), decreasing=TRUE)), aes(Var1, Freq)) + 
+            geom_bar(stat="identity") + geom_text(aes(label=Freq), vjust=-0.3, size=2) + theme_minimal() + coord_flip()
+  
+drug <- ggplot(as.data.frame(sort(table(df_profiles$drugs), decreasing=TRUE)), aes(Var1, Freq)) + 
+          geom_bar(stat="identity") + geom_text(aes(label=Freq), vjust=-0.3, size=2) + theme_minimal() + coord_flip()
+  
+educ <- ggplot(as.data.frame(sort(table(df_profiles$education), decreasing=TRUE)), aes(Var1, Freq)) + 
+          geom_bar(stat="identity") + geom_text(aes(label=Freq), vjust=-0.3, size=2) + theme_minimal() + coord_flip()
+  
+job_title <- ggplot(as.data.frame(sort(table(df_profiles$job), decreasing=TRUE)), aes(Var1, Freq)) + 
+              geom_bar(stat="identity") + geom_text(aes(label=Freq), vjust=-0.3, size=2) + theme_minimal() + coord_flip()
+  
+orien <- ggplot(as.data.frame(sort(table(df_profiles$orientation), decreasing=TRUE)), aes(Var1, Freq)) + 
+            geom_bar(stat="identity") + geom_text(aes(label=Freq), vjust=-0.3, size=2) + theme_minimal() + coord_flip()
+  
+pet <- ggplot(as.data.frame(sort(table(df_profiles$pets), decreasing=TRUE)), aes(Var1, Freq)) + 
+        geom_bar(stat="identity")+ geom_text(aes(label=Freq), vjust=-0.3, size=2)+ theme_minimal() + coord_flip()
+  
+smoke <- ggplot(as.data.frame(sort(table(df_profiles$smokes), decreasing=TRUE)), aes(Var1, Freq)) + 
+          geom_bar(stat="identity")+ geom_text(aes(label=Freq), vjust=-0.3, size=2)+ theme_minimal() + coord_flip()
+  
+rel_status <- ggplot(as.data.frame(sort(table(df_profiles$status), decreasing=TRUE)), aes(Var1, Freq)) + 
+                geom_bar(stat="identity")+ geom_text(aes(label=Freq), vjust=-0.3, size=2)+ theme_minimal() + coord_flip()
+                
+grid.arrange(body, drink, drug, educ, job_title, orien, pet, smoke, rel_status, ncol = 3, nrow = 3)
+```{r}
+
+```
+# Check the number of unique values for locations
+unique(df_profiles$location) %>% length()
+# Check how many populated values for income there are
+dim(df_profiles)[1] - 48442
+```{r}
+There are 11504
+```
+# filter out the null values for income
+df_profiles_new <- df_profiles %>% drop_na(income) %>% select(job, location, age, income, sex)
+
+
+ggplot(as.data.frame(sort(table(df_profiles$sex), decreasing=TRUE)), aes(Var1, Freq)) + 
+        geom_bar(stat="identity")+ geom_text(aes(label=Freq), vjust=-0.3, size=2)+ theme_minimal() + coord_flip()
+
+# Get the mean and median of income
+mean_inc <- df_profiles_new$income %>% mean()
+median_inc <- df_profiles_new$income %>% median()
+
+ggplot(df_profiles_new, aes(x=income)) +
+  geom_histogram(aes(y = ..density..), bins= 20, colour = 1, fill= "blue", alpha = 2.0) +
+    geom_density() + geom_vline(xintercept=mean_inc, size=1.5, color="red") + geom_vline(xintercept=median_inc, size=1.5, color="orange")
+```{r}
+
+```
+##### Feature Engineer relationship status & education if you thought there was a connection
+df_profiles$statEDU <- paste(df_profiles$status, df_profiles$education, sep = '_')
+##### Plot the featured engineered results
+ggplot(as.data.frame(sort(table(df_profiles$statEDU), decreasing=TRUE)), aes(Var1, Freq)) + 
+            geom_bar(stat="identity") + geom_text(aes(label=Freq), vjust=-0.3, size=2) + theme_minimal() + coord_flip()
+```{r}
+
+```
+# Do mean imputation on the income column
+df_profiles$income[is.na(df_profiles$income)] <- mean(df_profiles$income, na.rm=TRUE)
+# Get the mean and median of the imputed means
+# Get the mean and median of income
+mean_inc <- df_profiles$income %>% mean()
+median_inc <- df_profiles$income %>% median()
+# get the histogram and density plot of the income column
+ ggplot(df_profiles_new, aes(x=income)) +
+              geom_histogram(aes(y = ..density..), bins= 20, colour = 1, fill= "blue", alpha = 2.0) +
+                geom_density() + geom_vline(xintercept=mean_inc, size=1.5, color="red") + geom_vline(xintercept=median_inc, size=1.5, color="orange")
+                
+summary(df_profiles$income)
+                
+```{r}
+
+```
+mean_age <- df_profiles$age %>% mean()
+median_age <- df_profiles$age %>% median()
+# Plot the histogram density plot and boxplot of age as a whole then do the same by sex
+age_dens <- ggplot(df_profiles_new, aes(x=age)) +
+              geom_histogram(aes(y = ..density..), bins= 20, colour = 1, fill= "blue", alpha = 2.0) +
+                geom_density() + geom_vline(xintercept=mean_age, size=1.5, color="red") + geom_vline(xintercept=median_age, size=1.5, color="orange")
+                
+age_box <- ggplot(df_profiles, aes(x = age)) + 
+                        geom_boxplot(width = 0.5)
+
+
+sex_age_dens <- ggplot(df_profiles, aes(x = age, fill = sex)) + 
+                geom_density(alpha = 0.3)
+
+sex_age_box <- ggplot(df_profiles, aes(x = sex, y = age)) + 
+                        geom_boxplot(width = 0.5)
+
+
+grid.arrange(age_dens, age_box, sex_age_dens, sex_age_box, ncol = 2, nrow = 2)                        
+# Get the summary of age in total
+summary(df_profiles$age)
+#Adding to be pushed
