@@ -12,8 +12,12 @@ plot(cars)
 ```
 
 # Load Libraries
-#install.packages("gridExtra")
-#install.packages("caret")
+install.packages("gridExtra")
+install.packages("caret")
+install.packages("vtreat")
+install.packages("ggmap")
+install.packages("ggthemes")
+
 library(caret)
 library(vtreat)
 library(gridExtra)
@@ -21,13 +25,15 @@ library(dplyr)
 library(tidyr)
 library(stringr)
 library(ggplot2)
+library(ggmap)
+library(ggthemes)
 
 #Set working directory
 # mac setting of working directory
 path <- getwd()
-setwd(path)
+#setwd(path)
 # Windows setting of working directory
-#setwd("C:/Users/student/Documents/Terrill/Harvard DS/Data_Mining_Business/Harvard_DataMining_Business_Student/Cases/I Ok Cupid")
+setwd("C:/Users/student/Documents/Terrill/Harvard DS/Data_Mining_Business/Harvard_DataMining_Business_Student/Cases/I Ok Cupid")
 # Load the address dataset
 df_address <- read.csv("addr.csv")
 # Load the lat long dataset
@@ -149,7 +155,7 @@ summary(df_profiles$income)
 mean_age <- df_profiles$age %>% mean()
 median_age <- df_profiles$age %>% median()
 # Plot the histogram density plot and boxplot of age as a whole then do the same by sex
-age_dens <- ggplot(df_profiles_new, aes(x=age)) +
+age_dens <- ggplot(df_profiles, aes(x=age)) +
               geom_histogram(aes(y = ..density..), bins= 20, colour = 1, fill= "blue", alpha = 2.0) +
                 geom_density() + geom_vline(xintercept=mean_age, size=1.5, color="red") + geom_vline(xintercept=median_age, size=1.5, color="orange")
                 
@@ -168,3 +174,103 @@ grid.arrange(age_dens, age_box, sex_age_dens, sex_age_box, ncol = 2, nrow = 2)
 # Get the summary of age in total
 summary(df_profiles$age)
 #Adding to be pushed
+```{r}
+
+```
+# Get rid of outliers in the age and income columns
+# Function to identify the outliers
+outlier_detect <- function(x) {
+
+  Q1 <- quantile(x, probs=.25)
+  Q3 <- quantile(x, probs=.75)
+  iqr = Q3-Q1
+
+ upper_limit = Q3 + (iqr*1.5)
+ lower_limit = Q1 - (iqr*1.5)
+
+ x > upper_limit | x < lower_limit
+}
+# Function to remove the outliers
+rm_outliers <- function(df, cols = names(df)) {
+  for (col in cols) {
+    df_new <- df[!outlier_detect(df[[col]]),]
+  }
+  return(df_new)
+}
+# Remove the outliers from the columns age and income
+df_profiles <- rm_outliers(df_profiles, c('age', 'income'))
+# remove duplicate rows from dataset
+df_profiles <- df_profiles[!duplicated(df_profiles), ]
+# Get the new dimension
+dim(df_profiles)
+```{r}
+
+```
+# Standardize the location column to make sure all values are the same by making them uppercase
+df_profiles$location <- toupper(df_profiles$location)
+df_latLong$location <- toupper(df_latLong$location)
+
+# Merge the profiles data set with the df_latlon data set to get the latitude and longitude
+df_profiles <- left_join(df_profiles, df_latLong, by ='location')
+```{r}
+
+```
+# Plot age and income by sex
+ggplot(df_profiles, aes(x=age, y=income, color=sex)) +
+  geom_point()
+```{r}
+
+```
+# Impute the state using the location column for df_address. Then merge the column with df_profiles
+# Return the indexes where the State is null and populate the state column the same as above
+na_indxes_st <- which(is.na(df_address$state))
+#Adding to be pushed
+for (indx in na_indxes_st){
+  loc_split <- strsplit(str_to_title(df_address$location[indx]), split=", ")
+  df_address$state[indx] <- loc_split[[1]][2]
+}
+# Create a subset of the df_adress that only includes the location and state to merge with df_profiles
+df_state <- subset(df_address, select = c(location, state))
+# Make Location and state all uppercase in df_address
+df_state$state <- toupper(df_state$state)
+df_state$location <- toupper(df_state$location)
+
+# Merge the profiles data set with the df_state data set to get the state
+df_profiles <- left_join(df_profiles, df_state, by ='location')
+```{r}
+
+```
+# Plot state
+ggplot(as.data.frame(sort(table(df_profiles$state), decreasing=TRUE)), aes(Var1, Freq)) + 
+            geom_bar(stat="identity") + geom_text(aes(label=Freq), vjust=-0.3, size=2) + theme_minimal() +  coord_flip()
+```{r}
+
+```
+# create stamenmap of california
+cali <- get_stamenmap(
+    bbox = c(left = -129.89, bottom = 31.05, right = -103.83, top = 43.26),
+    map = "terrain",
+    zoom = 6
+)
+
+ggmap(cali)
+```{r}
+
+```
+# plot points on the map of california
+ggmap(cali) +
+    geom_point(data = df_profiles, aes(x = lon, y = lat, color = sex), size = .5) +
+      theme_map()
+      ```{r}
+
+```
+# Create stamenmap of the bay area
+bay_area <- get_stamenmap(
+    bbox = c(left = -123.89, bottom = 36.51, right = -117.37, top = 39.53),
+    map = "terrain",
+    zoom = 8
+)
+# Plot the points based on orientation
+ggmap(bay_area) +
+    geom_point(data = df_profiles, aes(x = lon, y = lat, color = orientation,  size = orientation), alpha = .3) +
+      theme_map()
